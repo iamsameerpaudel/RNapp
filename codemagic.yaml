@@ -2,6 +2,14 @@ workflows:
   expo-android:
     name: Expo Android Build 
     max_build_duration: 60
+    triggering:
+      events:
+      - push
+      branch_patterns:
+      - pattern: "main"
+        include: true
+        source: true
+      cancel_previous_builds: true
     environment:
       vars:
         NODE_VERSION: 18

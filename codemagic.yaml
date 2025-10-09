@@ -43,12 +43,8 @@ workflows:
           cd android
           ./gradlew clean
           ./gradlew assembleRelease
-      - name: Move APK to artifacts folder
-        script: |
-          mkdir -p ../builds
-          mv app/build/outputs/apk/release/*.apk ../builds/
     artifacts:
-      - builds/**/*.apk
+    - android/app/build/outputs/**/*.apk
     publishing:
       email:
         recipients:

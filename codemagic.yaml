@@ -49,6 +49,7 @@ workflows:
       email:
         recipients:
           - strangeisnoone@gmail.com
+          - paudelsameer888@gmail.com
         notify:
           success: true
           failure: true

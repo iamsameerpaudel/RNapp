@@ -34,7 +34,7 @@ export default function HomeScreen() {
             })}
           </ThemedText>{' '}
           to open developer tools.
-          Test Text
+          Test Text 2
         </ThemedText>
       </ThemedView>
       <ThemedView style={styles.stepContainer}>

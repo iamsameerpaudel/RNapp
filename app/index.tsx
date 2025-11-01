@@ -2,13 +2,41 @@ import { Button, PermissionsAndroid, Platform, View } from "react-native";
 import { File, Directory, Paths } from 'expo-file-system'
 import RNFS from 'react-native-fs'
 import { shareAsync } from 'expo-sharing'
+import { useEffect, useState } from "react";
 export default function Index() {
+const [downloadPath, setDownloadPath] = useState<string | null>(null);
+  useEffect(() => {
+    const checkPermission = async () => {
+      const result = await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE
+      )
+
+      if (Platform.OS === 'android' && !result) {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+          {
+            title: 'Storage Permission',
+            message: 'We need access to save files!',
+            buttonPositive: 'Yes',
+          }
+        );
+        console.log('Permission granted:', granted);
+      }
+    };
+    checkPermission();
+  }, []);
+
+  useEffect(() => {
+    const getDownloadPath = async () => {
+      const path = await RNFS.DownloadDirectoryPath;
+      setDownloadPath(path);
+    };
+    getDownloadPath();
+  }, []);
 
 
-
-  const Basic = ()=>{
-    // get a list of files and directories in the main bundle
-RNFS.readDir(RNFS.DocumentDirectoryPath) // On Android, use "RNFS.DocumentDirectoryPath" (MainBundlePath is not defined)
+const Basic = ()=>{
+RNFS.readDir(RNFS.DownloadDirectoryPath) // On Android, use "RNFS.DownloadDirectoryPath" (MainBundlePath is not defined)
   .then((result) => {
     console.log('GOT RESULT', result);
 
@@ -18,32 +46,30 @@ RNFS.readDir(RNFS.DocumentDirectoryPath) // On Android, use "RNFS.DocumentDirect
   .then((statResult) => {
     if (statResult[0].isFile()) {
       // if we have a file, read it
-      return RNFS.readFile(statResult[1], 'utf8');
+      return RNFS.readFile(statResult[1]);
     }
 
     return 'no file';
   })
   .then((contents) => {
     // log the file contents
-    console.log(contents);
+    console.log("Contents",contents);
   })
   .catch((err) => {
-    console.log(err.message, err.code);
+    console.log("ERRORORRRRRR",err.message, err.code);
   });
   }
 
 
   const handlePressFIle1 = () => {
-    console.log(RNFS.DocumentDirectoryPath)
     try {
-      const dir = new Directory(Paths.cache)
-      const file = new File(Paths.document, `example-${new Date().toLocaleString()}.txt`)
+      const file = new File(Paths.document, `example-${new Date().toISOString()}.txt`)
       file.create()
       file.write("Hello world, mero naam sameer, just Created")
-      console.log(file.info())
+      console.log("FIleInfo:",file.info())
       save(file.uri)
     } catch (err) {
-      console.log(err)
+      console.log("ERR PRESS1",err)
     }
   }
 
@@ -51,9 +77,14 @@ RNFS.readDir(RNFS.DocumentDirectoryPath) // On Android, use "RNFS.DocumentDirect
     if (Platform.OS === 'android') {
       const permissions = await PermissionsAndroid.check('android.permission.WRITE_EXTERNAL_STORAGE')
       if (permissions) {
-        const file = new File(uri)
-        const moveFile = new File(RNFS.DocumentDirectoryPath)
-        file.move(moveFile)
+        try{
+
+          const file = new File(uri)
+          const moveFile = new File(RNFS.DownloadDirectoryPath)
+          file.move(moveFile)
+        }catch(err){
+          shareAsync(uri)
+        }
       } else {
         const permission = await PermissionsAndroid.request('android.permission.WRITE_EXTERNAL_STORAGE', {
             title: "Allow access to all files",
@@ -64,17 +95,19 @@ RNFS.readDir(RNFS.DocumentDirectoryPath) // On Android, use "RNFS.DocumentDirect
       })
       if (permission) {
         const file = new File(uri)
-        const moveFile = new File(RNFS.DocumentDirectoryPath)
+        const moveFile = new File(RNFS.DownloadDirectoryPath)
         file.move(moveFile)
       }else{
         shareAsync(uri)
       }
     }
-    }
+    }else{
+        shareAsync(uri)
+      }
   }
 
   const CreatorFile = ()=>{
-  var path = RNFS.DocumentDirectoryPath + `/test-${new Date().toLocaleString()}.txt`;
+  var path = RNFS.DownloadDirectoryPath + `/test-${new Date().toISOString()}.txt`;
 
 // write the file
   RNFS.writeFile(path, 'Lorem ipsum dolor sit amet', 'utf8')
@@ -82,12 +115,12 @@ RNFS.readDir(RNFS.DocumentDirectoryPath) // On Android, use "RNFS.DocumentDirect
     console.log('FILE WRITTEN!');
   })
   .catch((err) => {
-    console.log(err.message);
+    console.log("ERR writing:",err.message);
   });
   }
 
-  const Deleter = ()=>{
-    var path = RNFS.DocumentDirectoryPath + '/test.txt';
+  const Deleter = async ()=>{
+    var path = RNFS.DownloadDirectoryPath + '/test.txt';
 
 return RNFS.unlink(path)
   .then(() => {
@@ -95,7 +128,7 @@ return RNFS.unlink(path)
   })
   // `unlink` will throw an error, if the item to unlink does not exist
   .catch((err) => {
-    console.log(err.message);
+    console.log("ERR deleting",err.message);
   });
   }
 

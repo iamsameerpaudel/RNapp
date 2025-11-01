@@ -78,33 +78,25 @@ RNFS.readDir(RNFS.DownloadDirectoryPath) // On Android, use "RNFS.DownloadDirect
       const permissions = await PermissionsAndroid.check('android.permission.WRITE_EXTERNAL_STORAGE')
       if (permissions) {
         try{
-
           const file = new File(uri)
-          const moveFile = new File(RNFS.DownloadDirectoryPath)
+          const moveFile = new File(RNFS.DownloadDirectoryPath,`example-${new Date().toISOString()}.txt`)
           file.move(moveFile)
+          console.log("FILE TO MOVE",file.info())
+          console.log("FILE MOVED",moveFile.info())
         }catch(err){
-          shareAsync(uri)
+          try{
+            RNFS.moveFile(uri,RNFS.DownloadDirectoryPath)
+            console.log("FILE MOVED using RNFS")
+          }catch(err){
+
+            shareAsync(uri)
+          }
         }
       } else {
-        const permission = await PermissionsAndroid.request('android.permission.WRITE_EXTERNAL_STORAGE', {
-            title: "Allow access to all files",
-        buttonPositive: 'Yes',
-        buttonNegative: 'No',
-        buttonNeutral: "dunno",
-        message: "Needed access to save file"
-      })
-      if (permission) {
-        const file = new File(uri)
-        const moveFile = new File(RNFS.DownloadDirectoryPath)
-        file.move(moveFile)
-      }else{
-        shareAsync(uri)
-      }
-    }
-    }else{
         shareAsync(uri)
       }
   }
+}
 
   const CreatorFile = ()=>{
   var path = RNFS.DownloadDirectoryPath + `/test-${new Date().toISOString()}.txt`;
@@ -121,7 +113,7 @@ RNFS.readDir(RNFS.DownloadDirectoryPath) // On Android, use "RNFS.DownloadDirect
 
   const Deleter = async ()=>{
     var path = RNFS.DownloadDirectoryPath + '/test.txt';
-
+console.log("DELETE PATH",path);
 return RNFS.unlink(path)
   .then(() => {
     console.log('FILE DELETED');

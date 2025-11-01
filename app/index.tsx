@@ -4,7 +4,7 @@ import RNFS from 'react-native-fs'
 import { shareAsync } from 'expo-sharing'
 import { useEffect, useState } from "react";
 export default function Index() {
-const [downloadPath, setDownloadPath] = useState<string | null>(null);
+  const [downloadPath, setDownloadPath] = useState<string | null>(null);
   useEffect(() => {
     const checkPermission = async () => {
       const result = await PermissionsAndroid.check(
@@ -35,29 +35,29 @@ const [downloadPath, setDownloadPath] = useState<string | null>(null);
   }, []);
 
 
-const Basic = ()=>{
-RNFS.readDir(RNFS.DownloadDirectoryPath) // On Android, use "RNFS.DownloadDirectoryPath" (MainBundlePath is not defined)
-  .then((result) => {
-    console.log('GOT RESULT', result);
+  const Basic = () => {
+    RNFS.readDir(RNFS.DownloadDirectoryPath) // On Android, use "RNFS.DownloadDirectoryPath" (MainBundlePath is not defined)
+      .then((result) => {
+        console.log('GOT RESULT', result);
 
-    // stat the first file
-    return Promise.all([RNFS.stat(result[0].path), result[0].path]);
-  })
-  .then((statResult) => {
-    if (statResult[0].isFile()) {
-      // if we have a file, read it
-      return RNFS.readFile(statResult[1]);
-    }
+        // stat the first file
+        return Promise.all([RNFS.stat(result[0].path), result[0].path]);
+      })
+      .then((statResult) => {
+        if (statResult[0].isFile()) {
+          // if we have a file, read it
+          return RNFS.readFile(statResult[1]);
+        }
 
-    return 'no file';
-  })
-  .then((contents) => {
-    // log the file contents
-    console.log("Contents",contents);
-  })
-  .catch((err) => {
-    console.log("ERRORORRRRRR",err.message, err.code);
-  });
+        return 'no file';
+      })
+      .then((contents) => {
+        // log the file contents
+        console.log("Contents", contents);
+      })
+      .catch((err) => {
+        console.log("ERRORORRRRRR", err.message, err.code);
+      });
   }
 
 
@@ -66,10 +66,10 @@ RNFS.readDir(RNFS.DownloadDirectoryPath) // On Android, use "RNFS.DownloadDirect
       const file = new File(Paths.document, `example-${new Date().toISOString()}.txt`)
       file.create()
       file.write("Hello world, mero naam sameer, just Created")
-      console.log("FIleInfo:",file.info())
+      console.log("FIleInfo:", file.info())
       save(file.uri)
     } catch (err) {
-      console.log("ERR PRESS1",err)
+      console.log("ERR PRESS1", err)
     }
   }
 
@@ -77,17 +77,32 @@ RNFS.readDir(RNFS.DownloadDirectoryPath) // On Android, use "RNFS.DownloadDirect
     if (Platform.OS === 'android') {
       const permissions = await PermissionsAndroid.check('android.permission.WRITE_EXTERNAL_STORAGE')
       if (permissions) {
-        try{
+        try {
           const file = new File(uri)
-          const moveFile = new File(RNFS.DownloadDirectoryPath,`example-${new Date().toISOString()}.txt`)
+          const moveFile = new File(`${RNFS.DownloadDirectoryPath}` + `/example-${new Date().toISOString()}.txt`)
           file.move(moveFile)
-          console.log("FILE TO MOVE",file.info())
-          console.log("FILE MOVED",moveFile.info())
-        }catch(err){
-          try{
-            RNFS.moveFile(uri,RNFS.DownloadDirectoryPath)
-            console.log("FILE MOVED using RNFS")
-          }catch(err){
+          console.log("FILE TO MOVE", file.info())
+          console.log("FILE MOVED", moveFile.info())
+        } catch (err) {
+          try {
+            try {
+              moveWithReadeWrite(uri)
+            } catch (err) {
+
+              RNFS.readFile(uri)
+                .then((result) => {
+                  console.log("READ FILE", result);
+                  RNFS.writeFile(RNFS.DownloadDirectoryPath + `/example-${new Date().toISOString()}.txt`, result)
+                    .then((success) => {
+                      console.log('FILE WRITTEN!');
+                    })
+                    .catch((err) => {
+                      console.log("ERR writing:", err.message);
+                    });
+                })
+              console.log("FILE MOVED using RNFS")
+            }
+          } catch (err) {
 
             shareAsync(uri)
           }
@@ -95,33 +110,46 @@ RNFS.readDir(RNFS.DownloadDirectoryPath) // On Android, use "RNFS.DownloadDirect
       } else {
         shareAsync(uri)
       }
-  }
-}
-
-  const CreatorFile = ()=>{
-  var path = RNFS.DownloadDirectoryPath + `/test-${new Date().toISOString()}.txt`;
-
-// write the file
-  RNFS.writeFile(path, 'Lorem ipsum dolor sit amet', 'utf8')
-  .then((success) => {
-    console.log('FILE WRITTEN!');
-  })
-  .catch((err) => {
-    console.log("ERR writing:",err.message);
-  });
+    }
   }
 
-  const Deleter = async ()=>{
+  const moveWithReadeWrite = async (uri: string) => {
+    try {
+
+      const file = new File(uri)
+      const moveFile = new File(`${RNFS.DownloadDirectoryPath}` + `/example-${new Date().toISOString()}.txt`)
+      const data = file.bytesSync()
+      moveFile.write(data)
+      console.log("FILE MOVED using RNFS")
+    } catch (err) {
+      throw err
+    }
+  }
+
+  const CreatorFile = () => {
+    var path = RNFS.DownloadDirectoryPath + `/test-${new Date().toISOString()}.txt`;
+
+    // write the file
+    RNFS.writeFile(path, 'Lorem ipsum dolor sit amet')
+      .then((success) => {
+        console.log('FILE WRITTEN!', success);
+      })
+      .catch((err) => {
+        console.log("ERR writing:", err.message);
+      });
+  }
+
+  const Deleter = async () => {
     var path = RNFS.DownloadDirectoryPath + '/test.txt';
-console.log("DELETE PATH",path);
-return RNFS.unlink(path)
-  .then(() => {
-    console.log('FILE DELETED');
-  })
-  // `unlink` will throw an error, if the item to unlink does not exist
-  .catch((err) => {
-    console.log("ERR deleting",err.message);
-  });
+    console.log("DELETE PATH", path);
+    return RNFS.unlink(path)
+      .then(() => {
+        console.log('FILE DELETED');
+      })
+      // `unlink` will throw an error, if the item to unlink does not exist
+      .catch((err) => {
+        console.log("ERR deleting", err.message);
+      });
   }
 
   return (
